@@ -510,15 +510,73 @@
 
         // Export Functionality
         document.getElementById('exportHtmlBtn').addEventListener('click', () => {
+            const uid = 'll-' + Math.random().toString(36).substr(2, 9);
+            const containerId = 'container-' + uid;
+            const canvasId = 'canvas-' + uid;
+            const filterId = 'goo-' + uid;
+            const clipId = 'clip-' + uid;
+
             const css = document.querySelector('style').textContent;
-            const containerHtml = document.querySelector('.lamp-container').outerHTML;
+
+            // Get HTML and replace IDs
+            let containerHtml = document.querySelector('.lamp-container').outerHTML;
+            // Inject unique ID to container
+            containerHtml = containerHtml.replace('class="lamp-container"', `id="${containerId}" class="lamp-container"`);
+            // Replace canvas ID
+            containerHtml = containerHtml.replace('id="lavaCanvas"', `id="${canvasId}"`);
+            // Replace filter ID
+            containerHtml = containerHtml.replace('id="goo-outline"', `id="${filterId}"`);
+            // Replace filter references
+            containerHtml = containerHtml.replaceAll('url(#goo-outline)', `url(#${filterId})`);
+            // Replace clip ID
+            containerHtml = containerHtml.replace('id="glass-clip"', `id="${clipId}"`);
+            // Replace clip references
+            containerHtml = containerHtml.replaceAll('url(#glass-clip)', `url(#${clipId})`);
+
             const exportSettings = JSON.stringify(settings, null, 4);
+
+            // Dynamically rewrite functions to use specific IDs/elements
+            // We need a modified applySettings that uses the unique IDs
+            const applySettingsCode = `
+            function applySettings() {
+                const container = document.getElementById('${containerId}');
+                if (!container) return;
+                
+                // Update CSS vars strictly for this container scope if possible, 
+                // but since we use global vars in CSS, we might need to scope them or accept global change.
+                // However, user just wants "unique IDs" to avoid broken references.
+                // For variables, we can set them on the container and update CSS to use local vars if supported,
+                // but technically the original uses :root. 
+                // Let's stick to updating the Filter attributes which is the main ID duplicate issue.
+                
+                const dilate = container.querySelector('#${filterId} feMorphology');
+                if (dilate) dilate.setAttribute('radius', settings.strokeWidth);
+                const blur = container.querySelector('#${filterId} feGaussianBlur');
+                if (blur) blur.setAttribute('stdDeviation', settings.gooBlur);
+                
+                const canvas = document.getElementById('${canvasId}');
+                if (canvas) canvas.style.filter = 'url(#${filterId})';
+                
+                // Set CSS variables on the container to allow limited scoping if we changed CSS
+                // But for now, we just rely on standard :root behavior or add a scoped style block.
+                // To truly isolate colors, we'd need to rewrite the CSS to use container scope.
+                // For this request, checking unique IDs for canvas/svg is the priority.
+                container.style.setProperty('--bg-color', settings.bgColor);
+                container.style.setProperty('--lamp-outline', settings.outlineColor);
+            }
+            `;
 
             const scriptContent = `
 (function() {
-    const canvas = document.querySelector('.lamp-container canvas'); 
-    const ctx = canvas.getContext('2d');
     const settings = ${exportSettings};
+    const containerId = '${containerId}';
+    const canvasId = '${canvasId}';
+    
+    // We fetch canvas by unique ID
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return; 
+    const ctx = canvas.getContext('2d');
+    
     let blobs = [];
     
     const ATTRACTION_RANGE = 150;
@@ -530,9 +588,11 @@
     ${hexToRgba.toString()}
     ${initBlobs.toString()}
     ${applyForces.toString()}
-    ${applySettings.toString()}
     ${animate.toString()}
     ${explode.toString()}
+
+    // Insert modified applySettings
+    ${applySettingsCode}
 
     initBlobs();
     applySettings();
@@ -548,9 +608,17 @@
             `.trim();
 
             const fullHtml = `
-<!-- Canvas Lava Lamp Export -->
+<!-- Canvas Lava Lamp Export (${uid}) -->
 <style>${css}
-.lamp-container { margin: 0 auto; }
+#${containerId} { margin: 0 auto; }
+/* Scope colors to this container ID to prevent global pollution if multiple maps exist */
+#${containerId} {
+    --bg-color: ${settings.bgColor};
+    --lamp-outline: ${settings.outlineColor};
+}
+/* Override body/root usage for this container's children */
+#${containerId} .outline { stroke: var(--lamp-outline); }
+#${containerId} { background-color: var(--bg-color); }
 </style>
 ${containerHtml}
 <script>${scriptContent}<\/script>
@@ -559,7 +627,7 @@ ${containerHtml}
             navigator.clipboard.writeText(fullHtml).then(() => {
                 const btn = document.getElementById('exportHtmlBtn');
                 const origText = btn.textContent;
-                btn.textContent = '✅ Copied!';
+                btn.textContent = '✅ Copied Unique ID Export!';
                 setTimeout(() => btn.textContent = origText, 2000);
             }).catch(err => {
                 console.error('Failed to copy', err);
