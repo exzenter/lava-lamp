@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Lava Lamp (High Performance)</title>
+    <style>
+        :root {
+            --bg-color: #f7f3e9;
+            --lamp-outline: #1a1a1a;
+            --lava-color: #ff4d00;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 30px;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .lamp-container {
+            position: relative;
+            width: 209px;
+            height: 708px;
+            flex-shrink: 0;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* Apply the user's clip path to masking the canvas */
+            clip-path: url(#glass-clip);
+            /* Goo effect: Contrast thresholds the alpha gradients drawn on canvas */
+            filter: contrast(15);
+        }
+
+        .lamp-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .outline {
+            fill: none;
+            stroke: var(--lamp-outline);
+            stroke-width: 3.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            width: 300px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .settings-panel h2 {
+            margin: 0 0 20px 0;
+            font-size: 18px;
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .setting-group {
+            margin-bottom: 18px;
+        }
+
+        .setting-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 6px;
+        }
+
+        .setting-group input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .setting-group input[type="color"] {
+            width: 50px;
+            height: 30px;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .setting-group .value-display {
+            font-size: 12px;
+            color: #888;
+            margin-left: 8px;
+        }
+
+        .export-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: background-color 0.2s;
+        }
+
+        .export-btn:hover {
+            background-color: #555;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="lamp-container">
+        <!-- Canvas for high-performance blobs -->
+        <!-- We use the SVG clip-path via CSS to mask the canvas -->
+        <canvas id="lavaCanvas" width="209" height="708"></canvas>
+
+        <!-- SVG Overlay for Outline and Definitions -->
+        <svg viewBox="0 0 209 708" preserveAspectRatio="xMidYMid meet" class="lamp-overlay">
+            <defs>
+                <filter id="goo-outline">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+                    <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"
+                        result="goo" />
+                    <feMorphology in="goo" operator="dilate" radius="3" result="thick" />
+                    <feComposite in="thick" in2="goo" operator="out" result="stroke" />
+                    <feFlood flood-color="var(--lamp-outline)" result="color" />
+                    <feComposite in="color" in2="stroke" operator="in" />
+                </filter>
+
+                <clipPath id="glass-clip">
+                    <!-- Corrected right-side path with 1.5px safety inset -->
+                    <path d="M51 98.5 
+                             L7.0 382.5 
+                             C7.0 382.5 3.0 406 5.0 421.5 
+                             C7.0 437 13.0 455.5 13.0 455.5 
+                             L31.5 502 
+                             Q104.25 506 175.0 502
+                             C183.5 480 201.5 446 203.5 421.5
+                             C205.5 397 197.0 357 197.0 357
+                             L156.5 98.5 
+                             Z" />
+                </clipPath>
+            </defs>
+
+            <!-- Lamp Outline -->
+            <path class="outline"
+                d="M49.5599 98.5L65.0599 3H143.06L158.032 98.5M49.5599 98.5H158.032M49.5599 98.5L5.55989 382.5C5.55989 382.5 1.55985 406 3.55987 421.5C5.55989 437 11.5599 455.5 11.5599 455.5L30.0599 503.5M158.032 98.5L198.56 357C198.56 357 207.06 397 205.06 421.5C203.06 446 154.06 542 158.06 565.5C162.06 589 198.06 697 198.06 697C198.06 697 154.56 704.5 101.06 704.5C47.5599 704.5 10.0599 696.5 10.0599 696.5L48.5599 581C48.5599 581 50.0599 571.5 50.0599 565.5C50.0599 559.5 48.5599 551.5 48.5599 551.5L30.0599 503.5M30.0599 503.5C30.0599 503.5 81.0599 505.5 104.56 505.5C128.06 505.5 176.56 503.5 176.56 503.5" />
+        </svg>
+    </div>
+
+    <div class="settings-panel">
+        <h2>⚙️ Canvas Settings</h2>
+
+        <div class="setting-group">
+            <label>Background Color</label>
+            <input type="color" id="bgColor" value="#f7f3e9">
+        </div>
+
+        <div class="setting-group">
+            <label>Outline Color</label>
+            <input type="color" id="outlineColor" value="#1a1a1a">
+        </div>
+
+        <div class="setting-group">
+            <label>Number of Blobs <span class="value-display" id="numBlobsValue">5</span></label>
+            <input type="range" id="numBlobs" min="1" max="15" value="5">
+        </div>
+
+        <div class="setting-group">
+            <label>Blob Size (min) <span class="value-display" id="blobSizeMinValue">15</span></label>
+            <input type="range" id="blobSizeMin" min="5" max="30" value="15">
+        </div>
+
+        <div class="setting-group">
+            <label>Blob Size (max) <span class="value-display" id="blobSizeMaxValue">35</span></label>
+            <input type="range" id="blobSizeMax" min="20" max="60" value="35">
+        </div>
+
+        <div class="setting-group">
+            <label>Rise Speed <span class="value-display" id="riseSpeedValue">0.3</span></label>
+            <input type="range" id="riseSpeed" min="0.05" max="1" step="0.05" value="0.3">
+        </div>
+
+        <div class="setting-group">
+            <label>Max Speed <span class="value-display" id="maxSpeedValue">0.8</span></label>
+            <input type="range" id="maxSpeed" min="0.1" max="3.0" step="0.1" value="0.8">
+        </div>
+
+        <div class="setting-group">
+            <label>Inter-blob Gravity <span class="value-display" id="attractionForceValue">0.0008</span></label>
+            <input type="range" id="attractionForce" min="0" max="0.005" step="0.0001" value="0.0008">
+        </div>
+
+        <div class="setting-group">
+            <label>Explosion Force <span class="value-display" id="explosionForceValue">0.05</span></label>
+            <input type="range" id="explosionForce" min="0.01" max="0.5" step="0.01" value="0.05">
+        </div>
+
+        <div class="setting-group" style="text-align: center; margin-top: 15px;">
+            <button id="explodeBtn" style="padding: 8px 16px; cursor: pointer;">💥 Explode!</button>
+        </div>
+
+        <div class="setting-group">
+            <label>Goo Blur <span class="value-display" id="gooBlurValue">8</span></label>
+            <input type="range" id="gooBlur" min="0" max="20" value="8">
+        </div>
+
+        <div class="setting-group">
+            <label>Animation Speed <span class="value-display" id="animSpeedValue">1.0</span></label>
+            <input type="range" id="animSpeed" min="0.05" max="3" step="0.05" value="1">
+        </div>
+
+        <div class="setting-group">
+            <label>Stroke Width <span class="value-display" id="strokeWidthValue">3</span></label>
+            <input type="range" id="strokeWidth" min="1" max="8" value="3">
+        </div>
+
+        <div class="setting-group" style="margin-top: 20px; border-top: 2px solid #eee; padding-top: 20px;">
+            <button id="exportHtmlBtn" class="export-btn">📋 Copy Self-Contained HTML</button>
+        </div>
+
+    </div>
+
+    <script>
+        const canvas = document.getElementById('lavaCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const settings = {
+            bgColor: '#f7f3e9',
+            outlineColor: '#1a1a1a',
+            numBlobs: 5,
+            blobSizeMin: 15,
+            blobSizeMax: 35,
+            riseSpeed: 0.3,
+            wobble: 0.0005,
+            gooBlur: 8,
+            strokeWidth: 3,
+            animSpeed: 1.0,
+            gravity: 0.00005,
+            maxSpeed: 0.8,
+            attractionForce: 0.0008,
+            explosionForce: 0.05
+        };
+
+        let blobs = [];
+
+        // Physics Constants
+        const ATTRACTION_RANGE = 150;
+        const SPLIT_THRESHOLD_MULT = 0.6;
+        const SEPARATION_FORCE_MULT = 0.02;
+
+        class Blob {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                const spawnAtTop = Math.random() > 0.5;
+                this.x = 104 + (Math.random() - 0.5) * 80;
+                if (spawnAtTop) {
+                    this.y = 120 + Math.random() * 50;
+                    this.vy = 0.05 + Math.random() * 0.1;
+                    this.state = 'falling';
+                } else {
+                    this.y = 480 + Math.random() * 20;
+                    this.vy = -0.05 - Math.random() * settings.riseSpeed * 0.5;
+                    this.state = 'rising';
+                }
+                this.r = settings.blobSizeMin + Math.random() * (settings.blobSizeMax - settings.blobSizeMin);
+                this.vx = (Math.random() - 0.5) * 0.01;
+                this.phase = Math.random() * Math.PI * 2;
+            }
+
+            update() {
+                this.phase += 0.005 * settings.animSpeed;
+                this.x += (this.vx + Math.sin(this.phase) * settings.wobble) * settings.animSpeed;
+                this.y += this.vy * settings.animSpeed;
+                this.vx += (104 - this.x) * 0.0001 * settings.animSpeed;
+
+                const progress = (this.y - 100) / 400;
+                const halfWidth = 55 + progress * 45;
+                const minX = 104 - halfWidth;
+                const maxX = 104 + halfWidth;
+
+                if (this.state === 'rising') {
+                    if (this.y < 130) {
+                        this.y = 130;
+                        this.vy = Math.abs(this.vy) * 0.3;
+                        this.state = 'suspended';
+                    }
+                } else if (this.state === 'suspended') {
+                    this.vy *= 0.995;
+                    if (Math.abs(this.vy) < 0.005) {
+                        this.state = this.y < 300 ? 'falling' : 'rising';
+                    }
+                } else if (this.state === 'falling') {
+                    this.vy += settings.gravity * settings.animSpeed;
+                    if (this.y > 480) {
+                        this.y = 480;
+                        this.vy = -Math.abs(this.vy) * 0.5 - 0.02;
+                        this.state = 'rising';
+                    }
+                }
+
+                const buffer = 10;
+                const strictMinX = minX + buffer;
+                const strictMaxX = maxX - buffer;
+
+                if (this.x < strictMinX) { this.x = strictMinX; this.vx *= -0.5; }
+                if (this.x > strictMaxX) { this.x = strictMaxX; this.vx *= -0.5; }
+                if (this.y < 120) { this.y = 120; this.vy *= -0.5; }
+                if (this.y > 480) { this.y = 480; this.vy *= -0.5; }
+
+                this.x = Math.max(strictMinX, Math.min(strictMaxX, this.x));
+            }
+
+            draw(ctx) {
+                ctx.fillStyle = settings.outlineColor;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function hexToRgba(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r},${g},${b},${alpha})`;
+        }
+
+        function initBlobs() {
+            blobs = [];
+            const count = Math.min(settings.numBlobs, 15);
+            for (let i = 0; i < count; i++) {
+                blobs.push(new Blob());
+            }
+            blobs.push(new StickyBlob(104, 490, 70, 40));
+            blobs.push(new StickyBlob(104, 115, 35, 20));
+        }
+
+        class StickyBlob {
+            constructor(x, y, rx, ry) {
+                this.x = x; this.y = y; this.rx = rx; this.ry = ry;
+                this.vx = 0; this.vy = 0; this.r = (rx + ry) / 2;
+                this.fixed = true;
+            }
+            update() { /* No movement */ }
+            draw(ctx) {
+                ctx.fillStyle = settings.outlineColor;
+                ctx.beginPath();
+                ctx.ellipse(this.x, this.y, this.rx, this.ry, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function applyForces() {
+            for (let i = 0; i < blobs.length; i++) {
+                if (!blobs[i].fixed) {
+                    const maxSpeed = settings.maxSpeed;
+                    const speed = Math.sqrt(blobs[i].vx * blobs[i].vx + blobs[i].vy * blobs[i].vy);
+                    if (speed > maxSpeed) {
+                        blobs[i].vx = (blobs[i].vx / speed) * maxSpeed;
+                        blobs[i].vy = (blobs[i].vy / speed) * maxSpeed;
+                    }
+                }
+
+                for (let j = i + 1; j < blobs.length; j++) {
+                    const b1 = blobs[i];
+                    const b2 = blobs[j];
+                    const dx = b2.x - b1.x;
+                    const dy = b2.y - b1.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist === 0) continue;
+
+                    if (dist < ATTRACTION_RANGE) {
+                        const force = (1 - dist / ATTRACTION_RANGE) * settings.attractionForce * settings.animSpeed;
+                        if (!b1.fixed) { b1.vx += (dx / dist) * force; b1.vy += (dy / dist) * force; }
+                        if (!b2.fixed) { b2.vx -= (dx / dist) * force; b2.vy -= (dy / dist) * force; }
+                    }
+
+                    const minDist = b1.r + b2.r;
+                    if (dist < minDist) {
+                        const dvx = b2.vy - b1.vy;
+                        const dvy = b2.vy - b1.vy;
+                        const vRel = Math.sqrt((b2.vx - b1.vx) ** 2 + (b2.vy - b1.vy) ** 2);
+
+                        if (vRel > SPLIT_THRESHOLD_MULT) {
+                            const overlap = minDist - dist;
+                            const sep = SEPARATION_FORCE_MULT * overlap;
+                            if (!b1.fixed) { b1.vx -= (dx / dist) * sep; b1.vy -= (dy / dist) * sep; }
+                            if (!b2.fixed) { b2.vx += (dx / dist) * sep; b2.vy += (dy / dist) * sep; }
+                        }
+                    }
+                }
+            }
+        }
+
+        function applySettings() {
+            document.documentElement.style.setProperty('--bg-color', settings.bgColor);
+            document.documentElement.style.setProperty('--lamp-outline', settings.outlineColor);
+            const dilate = document.querySelector('#goo-outline feMorphology');
+            if (dilate) dilate.setAttribute('radius', settings.strokeWidth);
+            const blur = document.querySelector('#goo-outline feGaussianBlur');
+            if (blur) blur.setAttribute('stdDeviation', settings.gooBlur);
+            canvas.style.filter = 'url(#goo-outline)';
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            applyForces();
+            blobs.forEach(b => {
+                if (!b.fixed) b.update();
+                b.draw(ctx);
+            });
+            requestAnimationFrame(animate);
+        }
+
+        const uiMap = {
+            'bgColor': 'value',
+            'outlineColor': 'value',
+            'numBlobs': 'valueInt',
+            'blobSizeMin': 'valueInt',
+            'blobSizeMax': 'valueInt',
+            'riseSpeed': 'valueFloat',
+            'gooBlur': 'valueInt',
+            'animSpeed': 'valueFloat',
+            'strokeWidth': 'valueInt',
+            'maxSpeed': 'valueFloat',
+            'attractionForce': 'valueFloat',
+            'explosionForce': 'valueFloat'
+        };
+
+        function explode(originX, originY) {
+            if (!originX) originX = canvas.width / 2;
+            if (!originY) originY = canvas.height / 2;
+            blobs.forEach(b => {
+                if (!b.fixed) {
+                    const dx = b.x - originX;
+                    const dy = b.y - originY;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
+                    const force = settings.explosionForce * 20.0;
+                    b.vx += (dx / dist) * force;
+                    b.vy += (dy / dist) * force;
+                }
+            });
+        }
+
+        const explodeBtn = document.getElementById('explodeBtn');
+        if (explodeBtn) {
+            explodeBtn.addEventListener('click', () => {
+                explode(104, 300);
+            });
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+            explode(x, y);
+        });
+
+        Object.keys(uiMap).forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('input', (e) => {
+                const type = uiMap[id];
+                if (type === 'checked') settings[id] = e.target.checked;
+                if (type === 'value') settings[id] = e.target.value;
+                if (type === 'valueInt') settings[id] = parseInt(e.target.value);
+                if (type === 'valueFloat') settings[id] = parseFloat(e.target.value);
+                const disp = document.getElementById(id + 'Value');
+                if (disp) disp.textContent = settings[id];
+                if (id === 'numBlobs') initBlobs();
+                applySettings();
+            });
+        });
+
+        initBlobs();
+        applySettings();
+        animate();
+
+        // Export Functionality
+        document.getElementById('exportHtmlBtn').addEventListener('click', () => {
+            const css = document.querySelector('style').textContent;
+            const containerHtml = document.querySelector('.lamp-container').outerHTML;
+            const exportSettings = JSON.stringify(settings, null, 4);
+
+            const scriptContent = `
+(function() {
+    const canvas = document.querySelector('.lamp-container canvas'); 
+    const ctx = canvas.getContext('2d');
+    const settings = ${exportSettings};
+    let blobs = [];
+    
+    const ATTRACTION_RANGE = 150;
+    const SPLIT_THRESHOLD_MULT = 0.6;
+    const SEPARATION_FORCE_MULT = 0.02;
+
+    ${Blob.toString()}
+    ${StickyBlob.toString()}
+    ${hexToRgba.toString()}
+    ${initBlobs.toString()}
+    ${applyForces.toString()}
+    ${applySettings.toString()}
+    ${animate.toString()}
+    ${explode.toString()}
+
+    initBlobs();
+    applySettings();
+    animate();
+
+    canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+        explode(x, y);
+    });
+})();
+            `.trim();
+
+            const fullHtml = `
+<!-- Canvas Lava Lamp Export -->
+<style>${css}
+.lamp-container { margin: 0 auto; }
+</style>
+${containerHtml}
+<script>${scriptContent}<\/script>
+            `.trim();
+
+            navigator.clipboard.writeText(fullHtml).then(() => {
+                const btn = document.getElementById('exportHtmlBtn');
+                const origText = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => btn.textContent = origText, 2000);
+            }).catch(err => {
+                console.error('Failed to copy', err);
+                alert('Failed to copy. ' + err);
+            });
+        });
+    </script>
+</body>
+
+</html>

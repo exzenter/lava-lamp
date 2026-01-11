@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated Lava Lamp</title>
+    <style>
+        :root {
+            --bg-color: #f7f3e9;
+            --lamp-outline: #1a1a1a;
+            --lava-color: #ff4d00;
+            --lava-color-bright: #ff8c00;
+            --lava-stroke-width: 3;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 30px;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .lamp-container {
+            position: relative;
+            width: 260px;
+            height: 700px;
+            flex-shrink: 0;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .outline {
+            fill: none;
+            stroke: var(--lamp-outline);
+            stroke-width: 3.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .lava-container {
+            filter: url(#goo);
+        }
+
+        .lava-container.no-goo {
+            filter: none;
+        }
+
+        .blob {
+            fill: url(#lava-gradient);
+            stroke: none;
+        }
+
+        .blob.stroke-only {
+            fill: var(--lamp-outline);
+            /* Needed for filter input */
+            stroke: none;
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            width: 300px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .settings-panel h2 {
+            margin: 0 0 20px 0;
+            font-size: 18px;
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .setting-group {
+            margin-bottom: 18px;
+        }
+
+        .setting-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 6px;
+        }
+
+        .setting-group input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .setting-group input[type="color"] {
+            width: 50px;
+            height: 30px;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .setting-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .setting-group .value-display {
+            font-size: 12px;
+            color: #888;
+            margin-left: 8px;
+        }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="lamp-container">
+        <svg viewBox="0 0 209 708" preserveAspectRatio="xMidYMid meet">
+            <defs>
+                <filter id="goo">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+                    <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"
+                        result="goo" />
+                    <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+                </filter>
+
+                <filter id="goo-outline">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+                    <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"
+                        result="goo" />
+                    <!-- Dilate to create larger shape -->
+                    <feMorphology in="goo" operator="dilate" radius="3" result="thick" />
+                    <!-- Cut out original to get stroke -->
+                    <feComposite in="thick" in2="goo" operator="out" result="stroke" />
+                    <!-- Colorize -->
+                    <feFlood flood-color="var(--lamp-outline)" result="color" />
+                    <feComposite in="color" in2="stroke" operator="in" />
+                </filter>
+
+                <linearGradient id="lava-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:var(--lava-color-bright);stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:var(--lava-color);stop-opacity:1" />
+                </linearGradient>
+
+                <clipPath id="glass-clip">
+                    <!-- Glass body area only (cap to waist, not including base) -->
+                    <path d="M49.56 98.5 
+                             L5.56 382.5 
+                             C5.56 382.5 1.56 406 3.56 421.5 
+                             C5.56 437 11.56 455.5 11.56 455.5 
+                             L30.06 503.5 
+                             L176.56 503.5
+                             C185 480 203.06 446 205.06 421.5
+                             C207.06 397 198.56 357 198.56 357
+                             L158.03 98.5 
+                             Z" />
+                </clipPath>
+            </defs>
+
+            <!-- Lava Blobs (Inside Clip Path) -->
+            <g clip-path="url(#glass-clip)">
+                <g class="lava-container" id="lavaContainer">
+                    <!-- Bottom pool -->
+                    <ellipse class="blob" cx="104" cy="490" rx="70" ry="40" />
+                    <!-- Top sticky blob -->
+                    <ellipse class="blob" cx="104" cy="115" rx="35" ry="20" />
+                </g>
+            </g>
+
+            <!-- Lamp Outline (user's provided SVG) -->
+            <path class="outline"
+                d="M49.5599 98.5L65.0599 3H143.06L158.032 98.5M49.5599 98.5H158.032M49.5599 98.5L5.55989 382.5C5.55989 382.5 1.55985 406 3.55987 421.5C5.55989 437 11.5599 455.5 11.5599 455.5L30.0599 503.5M158.032 98.5L198.56 357C198.56 357 207.06 397 205.06 421.5C203.06 446 154.06 542 158.06 565.5C162.06 589 198.06 697 198.06 697C198.06 697 154.56 704.5 101.06 704.5C47.5599 704.5 10.0599 696.5 10.0599 696.5L48.5599 581C48.5599 581 50.0599 571.5 50.0599 565.5C50.0599 559.5 48.5599 551.5 48.5599 551.5L30.0599 503.5M30.0599 503.5C30.0599 503.5 81.0599 505.5 104.56 505.5C128.06 505.5 176.56 503.5 176.56 503.5" />
+        </svg>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="settings-panel">
+        <h2>⚙️ Lava Lamp Settings</h2>
+
+        <div class="setting-group">
+            <label>
+                <input type="checkbox" id="strokeOnly"> Stroke-Only Blobs (like reference)
+            </label>
+        </div>
+
+        <div class="setting-group">
+            <label>Lava Color</label>
+            <input type="color" id="lavaColor" value="#ff4d00">
+        </div>
+
+        <div class="setting-group">
+            <label>Background Color</label>
+            <input type="color" id="bgColor" value="#f7f3e9">
+        </div>
+
+        <div class="setting-group">
+            <label>Outline Color</label>
+            <input type="color" id="outlineColor" value="#1a1a1a">
+        </div>
+
+        <div class="setting-group">
+            <label>Number of Blobs <span class="value-display" id="numBlobsValue">5</span></label>
+            <input type="range" id="numBlobs" min="1" max="12" value="5">
+        </div>
+
+        <div class="setting-group">
+            <label>Blob Size (min) <span class="value-display" id="blobSizeMinValue">15</span></label>
+            <input type="range" id="blobSizeMin" min="5" max="30" value="15">
+        </div>
+
+        <div class="setting-group">
+            <label>Blob Size (max) <span class="value-display" id="blobSizeMaxValue">35</span></label>
+            <input type="range" id="blobSizeMax" min="20" max="60" value="35">
+        </div>
+
+        <div class="setting-group">
+            <label>Rise Speed <span class="value-display" id="riseSpeedValue">0.3</span></label>
+            <input type="range" id="riseSpeed" min="0.05" max="1" step="0.05" value="0.3">
+        </div>
+
+        <div class="setting-group">
+            <label>Wobble Intensity <span class="value-display" id="wobbleValue">0.0005</span></label>
+            <input type="range" id="wobble" min="0" max="0.05" step="0.0005" value="0.0005">
+        </div>
+
+        <div class="setting-group">
+            <label>Goo Blur (Metaball Effect) <span class="value-display" id="gooBlurValue">8</span></label>
+            <input type="range" id="gooBlur" min="0" max="20" value="8">
+        </div>
+
+        <div class="setting-group">
+            <label>Animation Speed <span class="value-display" id="animSpeedValue">1.0</span></label>
+            <input type="range" id="animSpeed" min="0.05" max="3" step="0.05" value="1">
+        </div>
+
+        <div class="setting-group">
+            <label>Gravity <span class="value-display" id="gravityValue">0.00005</span></label>
+            <input type="range" id="gravity" min="0.00001" max="0.001" step="0.00001" value="0.00005">
+        </div>
+
+        <div class="setting-group">
+            <label>Lava Gradient Top Color</label>
+            <input type="color" id="lavaColorBright" value="#ff8c00">
+        </div>
+
+        <div class="setting-group">
+            <label>Stroke Width (for stroke-only mode) <span class="value-display"
+                    id="strokeWidthValue">3</span></label>
+            <input type="range" id="strokeWidth" min="1" max="8" value="3">
+        </div>
+    </div>
+
+    <script>
+        // Settings
+        const settings = {
+            strokeOnly: false,
+            lavaColor: '#ff4d00',
+            lavaColorBright: '#ff8c00',
+            bgColor: '#f7f3e9',
+            outlineColor: '#1a1a1a',
+            numBlobs: 5,
+            blobSizeMin: 15,
+            blobSizeMax: 35,
+            riseSpeed: 0.3,
+            wobble: 0.0005,
+            gooBlur: 8,
+            strokeWidth: 3,
+            animSpeed: 1.0,
+            gravity: 0.00005
+        };
+
+        const lavaContainer = document.getElementById('lavaContainer');
+        let blobs = [];
+
+        class Blob {
+            constructor() {
+                this.el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                this.el.setAttribute("class", "blob");
+                lavaContainer.appendChild(this.el);
+                this.reset();
+            }
+
+            reset() {
+                // Spawn at top or bottom randomly
+                const spawnAtTop = Math.random() > 0.5;
+                this.x = 104 + (Math.random() - 0.5) * 80;
+                if (spawnAtTop) {
+                    this.y = 120 + Math.random() * 50;
+                    this.vy = 0.05 + Math.random() * 0.1; // falling
+                    this.state = 'falling';
+                } else {
+                    this.y = 480 + Math.random() * 20;
+                    this.vy = -0.05 - Math.random() * settings.riseSpeed * 0.5; // rising
+                    this.state = 'rising';
+                }
+                this.r = settings.blobSizeMin + Math.random() * (settings.blobSizeMax - settings.blobSizeMin);
+                this.vx = (Math.random() - 0.5) * 0.01; // 10x reduced
+                this.phase = Math.random() * Math.PI * 2;
+            }
+
+            update() {
+                this.phase += 0.005 * settings.animSpeed;
+                this.x += (this.vx + Math.sin(this.phase) * settings.wobble) * settings.animSpeed;
+                this.y += this.vy * settings.animSpeed;
+
+                // Drift back to center
+                this.vx += (104 - this.x) * 0.0001;
+
+                // Glass width narrows toward top (from ~180 wide at bottom to ~110 at top)
+                const progress = (this.y - 100) / 400; // 0 at top, 1 at bottom
+                const halfWidth = 55 + progress * 45;
+                const minX = 104 - halfWidth;
+                const maxX = 104 + halfWidth;
+
+                if (this.state === 'rising') {
+                    if (this.y < 130) {
+                        // Bounce at top
+                        this.y = 130;
+                        this.vy = Math.abs(this.vy) * 0.3;
+                        this.state = 'suspended';
+                    }
+                } else if (this.state === 'suspended') {
+                    this.vy *= 0.995;
+                    if (Math.abs(this.vy) < 0.005) {
+                        this.state = this.y < 300 ? 'falling' : 'rising';
+                    }
+                } else if (this.state === 'falling') {
+                    this.vy += settings.gravity * settings.animSpeed;
+                    if (this.y > 480) {
+                        // Bounce at bottom
+                        this.y = 480;
+                        this.vy = -Math.abs(this.vy) * 0.5 - 0.02;
+                        this.state = 'rising';
+                    }
+                }
+
+                // Bounce off walls
+                if (this.x < minX || this.x > maxX) this.vx *= -1;
+                this.x = Math.max(minX, Math.min(maxX, this.x));
+
+                this.el.setAttribute("cx", this.x);
+                this.el.setAttribute("cy", this.y);
+                this.el.setAttribute("r", this.r);
+            }
+
+            destroy() {
+                this.el.remove();
+            }
+        }
+
+        function initBlobs() {
+            // Clear existing
+            blobs.forEach(b => b.destroy());
+            blobs = [];
+
+            // Spawn all at once instantly
+            for (let i = 0; i < settings.numBlobs; i++) {
+                blobs.push(new Blob());
+            }
+        }
+
+        function applySettings() {
+            document.documentElement.style.setProperty('--lava-color', settings.lavaColor);
+            document.documentElement.style.setProperty('--bg-color', settings.bgColor);
+            document.documentElement.style.setProperty('--lamp-outline', settings.outlineColor);
+            document.documentElement.style.setProperty('--lava-stroke-width', settings.strokeWidth);
+
+            // Update filter radius for stroke width
+            const dilate = document.querySelector('#goo-outline feMorphology');
+            if (dilate) dilate.setAttribute('radius', settings.strokeWidth);
+
+            // Update goo filter blur
+            document.querySelectorAll('feGaussianBlur').forEach(el => el.setAttribute('stdDeviation', settings.gooBlur));
+
+            const lavaContainerEl = document.getElementById('lavaContainer');
+            if (settings.strokeOnly) {
+                lavaContainerEl.style.filter = 'url(#goo-outline)';
+            } else {
+                lavaContainerEl.style.filter = 'url(#goo)';
+            }
+
+            document.querySelectorAll('.blob').forEach(blob => {
+                if (settings.strokeOnly) {
+                    blob.classList.add('stroke-only');
+                } else {
+                    blob.classList.remove('stroke-only');
+                }
+            });
+        }
+
+        function applyForces() {
+            for (let i = 0; i < blobs.length; i++) {
+                // Max Speed Cap
+                const maxSpeed = 0.8 * settings.animSpeed;
+                const speed = Math.sqrt(blobs[i].vx * blobs[i].vx + blobs[i].vy * blobs[i].vy);
+                if (speed > maxSpeed) {
+                    blobs[i].vx = (blobs[i].vx / speed) * maxSpeed;
+                    blobs[i].vy = (blobs[i].vy / speed) * maxSpeed;
+                }
+
+                // Boundary Clamping (Prevent disappearing)
+                // Approximate glass width logic from update()
+                const progress = (blobs[i].y - 100) / 400;
+                const halfWidth = 55 + progress * 45;
+                const minX = 104 - halfWidth + 10; // +10 padding
+                const maxX = 104 + halfWidth - 10;
+
+                if (blobs[i].x < minX) { blobs[i].x = minX; blobs[i].vx *= -0.5; }
+                if (blobs[i].x > maxX) { blobs[i].x = maxX; blobs[i].vx *= -0.5; }
+                if (blobs[i].y < 120) { blobs[i].y = 120; blobs[i].vy *= -0.5; } // Cap top
+                if (blobs[i].y > 480) { blobs[i].y = 480; blobs[i].vy *= -0.5; } // Cap bottom
+
+                for (let j = i + 1; j < blobs.length; j++) {
+                    const b1 = blobs[i];
+                    const b2 = blobs[j];
+
+                    const dx = b2.x - b1.x;
+                    const dy = b2.y - b1.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist === 0) continue;
+
+                    // Attraction (Increased range for "stretch")
+                    const attractionRange = 150;
+                    if (dist < attractionRange) {
+                        const force = (1 - dist / attractionRange) * 0.0008 * settings.animSpeed;
+
+                        // Pull towards each other
+                        b1.vx += (dx / dist) * force;
+                        b1.vy += (dy / dist) * force;
+                        b2.vx -= (dx / dist) * force;
+                        b2.vy -= (dy / dist) * force;
+                    }
+
+                    // Collision / Splitting logic
+                    // If they touch, check velocity. If fast, bounce (spit). If slow, let them merge.
+                    const minDist = b1.r + b2.r;
+                    if (dist < minDist) {
+                        // Relative velocity
+                        const dvx = b2.vx - b1.vx;
+                        const dvy = b2.vy - b1.vy;
+                        const vRel = Math.sqrt(dvx * dvx + dvy * dvy);
+
+                        const splitThreshold = 0.6 * settings.animSpeed;
+
+                        if (vRel > splitThreshold) {
+                            // "Spit" / Bounce effect (Reduced force)
+                            const overlap = minDist - dist;
+                            const separationForce = 0.02 * overlap; // Reduced from 0.05
+
+                            b1.vx -= (dx / dist) * separationForce;
+                            b1.vy -= (dy / dist) * separationForce;
+                            b2.vx += (dx / dist) * separationForce;
+                            b2.vy += (dy / dist) * separationForce;
+                        }
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            applyForces();
+            blobs.forEach(blob => blob.update());
+            requestAnimationFrame(animate);
+        }
+
+        // Event listeners for settings
+        document.getElementById('strokeOnly').addEventListener('change', (e) => {
+            settings.strokeOnly = e.target.checked;
+            applySettings();
+        });
+
+        document.getElementById('lavaColor').addEventListener('input', (e) => {
+            settings.lavaColor = e.target.value;
+            applySettings();
+        });
+
+        document.getElementById('bgColor').addEventListener('input', (e) => {
+            settings.bgColor = e.target.value;
+            applySettings();
+        });
+
+        document.getElementById('outlineColor').addEventListener('input', (e) => {
+            settings.outlineColor = e.target.value;
+            applySettings();
+        });
+
+        document.getElementById('numBlobs').addEventListener('input', (e) => {
+            settings.numBlobs = parseInt(e.target.value);
+            document.getElementById('numBlobsValue').textContent = settings.numBlobs;
+            initBlobs();
+        });
+
+        document.getElementById('blobSizeMin').addEventListener('input', (e) => {
+            settings.blobSizeMin = parseInt(e.target.value);
+            document.getElementById('blobSizeMinValue').textContent = settings.blobSizeMin;
+        });
+
+        document.getElementById('blobSizeMax').addEventListener('input', (e) => {
+            settings.blobSizeMax = parseInt(e.target.value);
+            document.getElementById('blobSizeMaxValue').textContent = settings.blobSizeMax;
+        });
+
+        document.getElementById('riseSpeed').addEventListener('input', (e) => {
+            settings.riseSpeed = parseFloat(e.target.value);
+            document.getElementById('riseSpeedValue').textContent = settings.riseSpeed.toFixed(2);
+        });
+
+        document.getElementById('wobble').addEventListener('input', (e) => {
+            settings.wobble = parseFloat(e.target.value);
+            document.getElementById('wobbleValue').textContent = settings.wobble.toFixed(2);
+        });
+
+        document.getElementById('gooBlur').addEventListener('input', (e) => {
+            settings.gooBlur = parseInt(e.target.value);
+            document.getElementById('gooBlurValue').textContent = settings.gooBlur;
+            applySettings();
+        });
+
+        document.getElementById('strokeWidth').addEventListener('input', (e) => {
+            settings.strokeWidth = parseInt(e.target.value);
+            document.getElementById('strokeWidthValue').textContent = settings.strokeWidth;
+            applySettings();
+        });
+
+        document.getElementById('animSpeed').addEventListener('input', (e) => {
+            settings.animSpeed = parseFloat(e.target.value);
+            document.getElementById('animSpeedValue').textContent = settings.animSpeed.toFixed(1);
+        });
+
+        document.getElementById('gravity').addEventListener('input', (e) => {
+            settings.gravity = parseFloat(e.target.value);
+            document.getElementById('gravityValue').textContent = settings.gravity.toFixed(5);
+        });
+
+        document.getElementById('lavaColorBright').addEventListener('input', (e) => {
+            settings.lavaColorBright = e.target.value;
+            document.documentElement.style.setProperty('--lava-color-bright', settings.lavaColorBright);
+        });
+
+        // Initialize
+        initBlobs();
+        animate();
+    </script>
+</body>
+
+</html>
