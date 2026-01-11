@@ -610,7 +610,14 @@
             const fullHtml = `
 <!-- Canvas Lava Lamp Export (${uid}) -->
 <style>${css}
-#${containerId} { margin: 0 auto; }
+#${containerId} { 
+    margin: 0 auto; 
+    width: 100%; 
+    max-width: 209px; 
+    height: auto; 
+    aspect-ratio: 209 / 708; 
+    position: relative;
+}
 /* Scope colors to this container ID to prevent global pollution if multiple maps exist */
 #${containerId} {
     --bg-color: ${settings.bgColor};
