@@ -1,5 +1,7 @@
 # Canvas Lava Lamp
 
+**[Live Demo](https://exzenter.github.io/lava-lamp/)**
+
 A high-performance, interactive lava lamp simulation using the HTML5 Canvas API.
 
 ## Features
