@@ -1,0 +1,12 @@
+{
+    "name": "canvas-lava-lamp-block",
+    "version": "1.0.0",
+    "description": "Canvas Lava Lamp Block",
+    "scripts": {
+        "build": "wp-scripts build",
+        "start": "wp-scripts start"
+    },
+    "devDependencies": {
+        "@wordpress/scripts": "^26.0.0"
+    }
+}

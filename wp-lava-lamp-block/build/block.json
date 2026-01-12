@@ -1,0 +1,74 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "antigravity/canvas-lava-lamp",
+  "version": "1.0.0",
+  "title": "Canvas Lava Lamp",
+  "category": "widgets",
+  "icon": "art",
+  "description": "A high-performance HTML5 Canvas lava lamp.",
+  "supports": {
+    "html": false
+  },
+  "textdomain": "canvas-lava-lamp",
+  "editorScript": "file:./index.js",
+  "style": "file:./style-index.css",
+  "viewScript": "file:./view.js",
+  "attributes": {
+    "blockId": {
+      "type": "string"
+    },
+    "bgColor": {
+      "type": "string",
+      "default": "#f7f3e9"
+    },
+    "outlineColor": {
+      "type": "string",
+      "default": "#1a1a1a"
+    },
+    "numBlobs": {
+      "type": "number",
+      "default": 5
+    },
+    "blobSizeMin": {
+      "type": "number",
+      "default": 15
+    },
+    "blobSizeMax": {
+      "type": "number",
+      "default": 35
+    },
+    "riseSpeed": {
+      "type": "number",
+      "default": 0.3
+    },
+    "maxSpeed": {
+      "type": "number",
+      "default": 0.8
+    },
+    "attractionForce": {
+      "type": "number",
+      "default": 0.0008
+    },
+    "explosionForce": {
+      "type": "number",
+      "default": 0.05
+    },
+    "gooBlur": {
+      "type": "number",
+      "default": 8
+    },
+    "animSpeed": {
+      "type": "number",
+      "default": 1
+    },
+    "strokeWidth": {
+      "type": "number",
+      "default": 3
+    },
+    "keepStrokeWidth": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}
