@@ -1,7 +1,7 @@
 import { useBlockProps } from '@wordpress/block-editor';
 
 export default function save({ attributes }) {
-    const { blockId, bgColor, outlineColor, keepStrokeWidth, lampStrokeWidth, lampStrokeColor, blobStrokeColor } = attributes;
+    const { blockId, bgColor, outlineColor, keepStrokeWidth, lampStrokeWidth, lampStrokeColor } = attributes;
     // Use blockId to create unique IDs for filters and clips
     const uniqueId = blockId || 'default';
     const clipId = `glass-clip-${uniqueId}`;
@@ -11,7 +11,6 @@ export default function save({ attributes }) {
         '--bg-color': bgColor,
         '--lamp-outline': outlineColor,
         '--lamp-stroke-color': lampStrokeColor,
-        '--blob-stroke-color': blobStrokeColor,
     };
 
     return (

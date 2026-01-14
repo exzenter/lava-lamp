@@ -31,7 +31,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
         keepStrokeWidth,
         lampStrokeWidth,
         lampStrokeColor,
-        blobStrokeColor,
     } = attributes;
 
     const containerRef = useRef(null);
@@ -86,7 +85,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
         '--bg-color': bgColor,
         '--lamp-outline': outlineColor,
         '--lamp-stroke-color': lampStrokeColor,
-        '--blob-stroke-color': blobStrokeColor,
     };
 
     return (
@@ -113,12 +111,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
                             onChange: (value) =>
                                 setAttributes({ lampStrokeColor: value }),
                             label: __('Lamp Body Stroke Color', 'canvas-lava-lamp'),
-                        },
-                        {
-                            value: blobStrokeColor,
-                            onChange: (value) =>
-                                setAttributes({ blobStrokeColor: value }),
-                            label: __('Blob Stroke Color', 'canvas-lava-lamp'),
                         },
                     ]}
                 />

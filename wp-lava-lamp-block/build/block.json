@@ -77,10 +77,6 @@
     "lampStrokeColor": {
       "type": "string",
       "default": "#1a1a1a"
-    },
-    "blobStrokeColor": {
-      "type": "string",
-      "default": "#1a1a1a"
     }
   }
 }
