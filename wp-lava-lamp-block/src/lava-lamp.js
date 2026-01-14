@@ -4,6 +4,7 @@ export class LavaLamp {
         this.settings = {
             bgColor: '#f7f3e9',
             outlineColor: '#1a1a1a',
+            blobStrokeColor: '#1a1a1a',
             numBlobs: 5,
             blobSizeMin: 15,
             blobSizeMax: 35,
@@ -275,7 +276,7 @@ class Blob {
     }
 
     draw(ctx) {
-        ctx.fillStyle = this.settings.outlineColor;
+        ctx.fillStyle = this.settings.blobStrokeColor;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
         ctx.fill();
@@ -296,7 +297,7 @@ class StickyBlob {
     }
     update() { /* No movement */ }
     draw(ctx) {
-        ctx.fillStyle = this.settings.outlineColor;
+        ctx.fillStyle = this.settings.blobStrokeColor;
         ctx.beginPath();
         ctx.ellipse(this.x, this.y, this.rx, this.ry, 0, 0, Math.PI * 2);
         ctx.fill();

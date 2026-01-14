@@ -69,6 +69,18 @@
 		"keepStrokeWidth": {
 			"type": "boolean",
 			"default": true
+		},
+		"lampStrokeWidth": {
+			"type": "number",
+			"default": 3.5
+		},
+		"lampStrokeColor": {
+			"type": "string",
+			"default": "#1a1a1a"
+		},
+		"blobStrokeColor": {
+			"type": "string",
+			"default": "#1a1a1a"
 		}
 	}
 }
