@@ -32,9 +32,20 @@ export class LavaLamp {
         this.blockId = this.settings.blockId || 'default';
         this.filterId = `goo-outline-${this.blockId}`;
 
+        // Framerate cap (60fps max)
+        this.targetFPS = 60;
+        this.frameInterval = 1000 / this.targetFPS;
+        this.lastFrameTime = 0;
+
+        // Visibility tracking for pause when out of view
+        this.isVisible = true;
+        this.isPaused = false;
+        this.intersectionObserver = null;
+
         this.initBlobs();
         this.applySettings();
         this.animate = this.animate.bind(this);
+        this.setupVisibilityObserver();
         this.animate();
 
         // Interaction (Explode)
@@ -54,9 +65,49 @@ export class LavaLamp {
         this.applySettings();
     }
 
+    setupVisibilityObserver() {
+        if (typeof IntersectionObserver === 'undefined') return;
+
+        this.intersectionObserver = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    this.isVisible = entry.isIntersecting;
+                    if (this.isVisible && this.isPaused) {
+                        this.resume();
+                    } else if (!this.isVisible && !this.isPaused) {
+                        this.pause();
+                    }
+                });
+            },
+            { threshold: 0 }
+        );
+
+        this.intersectionObserver.observe(this.container);
+    }
+
+    pause() {
+        if (this.isPaused) return;
+        this.isPaused = true;
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+    }
+
+    resume() {
+        if (!this.isPaused) return;
+        this.isPaused = false;
+        this.lastFrameTime = performance.now();
+        this.animate();
+    }
+
     destroy() {
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
+        }
+        if (this.intersectionObserver) {
+            this.intersectionObserver.disconnect();
+            this.intersectionObserver = null;
         }
     }
 
@@ -113,14 +164,24 @@ export class LavaLamp {
         });
     }
 
-    animate() {
+    animate(currentTime) {
+        if (this.isPaused) return;
+
+        this.animationFrameId = requestAnimationFrame(this.animate);
+
+        // Cap framerate to 60fps
+        if (!currentTime) currentTime = performance.now();
+        const elapsed = currentTime - this.lastFrameTime;
+        if (elapsed < this.frameInterval) return;
+
+        this.lastFrameTime = currentTime - (elapsed % this.frameInterval);
+
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.applyForces();
         this.blobs.forEach((b) => {
             if (!b.fixed) b.update();
             b.draw(this.ctx);
         });
-        this.animationFrameId = requestAnimationFrame(this.animate);
     }
 
     applyForces() {
