@@ -3,7 +3,9 @@
  * Plugin Name: Canvas Lava Lamp Block
  * Description: A Gutenberg block that renders the high-performance canvas lava lamp.
  * Version: 1.0.0
- * Author: Antigravity
+ * Plugin URI: https://exzent.de/plugins/
+ * Author: EXZENT
+ * Author URI: https://exzent.de
  *
  * @package canvas-lava-lamp
  */
